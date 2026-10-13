@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d6efd">
+<title>Inventário Patrimonial</title>
+<link rel="manifest" href="manifest.json">
+<style>
+  :root{
+    --bg:#f4f6f8; --card:#fff; --pri:#0d6efd; --pri-2:#0a58ca;
+    --txt:#1f2937; --mut:#6b7280; --bd:#e5e7eb; --ok:#16a34a; --err:#dc2626;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:16px}
+  header{background:var(--pri);color:#fff;padding:14px 16px;position:sticky;top:0;z-index:10;
+    display:flex;align-items:center;justify-content:space-between;gap:8px}
+  header h1{font-size:17px;margin:0;font-weight:600}
+  header .info{font-size:12px;opacity:.9}
+  header button{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.35);
+    border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600}
+  main{padding:16px;max-width:640px;margin:0 auto}
+  .screen{display:none}
+  .screen.active{display:block}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px}
+  label{display:block;font-size:14px;color:var(--mut);margin:10px 0 6px}
+  input[type=text],input[type=number],textarea,select{
+    width:100%;padding:12px;border:1px solid var(--bd);border-radius:10px;font-size:16px;background:#fff}
+  input:focus,select:focus{outline:2px solid var(--pri);border-color:var(--pri)}
+  button{cursor:pointer;border:none;border-radius:10px;padding:12px 16px;font-size:16px;font-weight:600}
+  .btn-pri{background:var(--pri);color:#fff;width:100%}
+  .btn-pri:active{background:var(--pri-2)}
+  .btn-sec{background:#fff;color:var(--pri);border:1px solid var(--pri);width:100%}
+  .btn-danger{background:#fff;color:var(--err);border:1px solid var(--err)}
+  .row{display:flex;gap:8px}
+  .row > *{flex:1}
+  .tipo{display:grid;gap:10px;margin-top:8px}
+  .tipo button{padding:16px;font-size:16px;background:#fff;border:2px solid var(--bd);color:var(--txt);
+    border-radius:12px;text-align:left}
+  .tipo button:active{border-color:var(--pri);background:#f0f7ff}
+  .tipo button.acento{border-color:#dbeafe;background:#f0f7ff;color:var(--pri)}
+  .metodos{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+  .metodos button{padding:12px;font-size:14px;background:#fff;border:1px solid var(--bd);border-radius:10px;color:var(--txt)}
+  .metodos button.ativo{border-color:var(--pri);background:#eef5ff;color:var(--pri)}
+  .preview{margin-top:10px}
+  .preview img{max-width:100%;max-height:220px;border-radius:10px;border:1px solid var(--bd);display:block}
+  .item{display:flex;gap:10px;align-items:flex-start;padding:10px;border:1px solid var(--bd);border-radius:10px;margin-bottom:8px;background:#fff}
+  .item img{width:56px;height:56px;object-fit:cover;border-radius:8px;background:#eee}
+  .item .meta{flex:1;min-width:0}
+  .item .meta strong{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .item .meta small{color:var(--mut);font-size:12px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .item .x{background:transparent;color:var(--err);font-size:20px;padding:4px 8px}
+  .vazio{color:var(--mut);text-align:center;padding:20px;font-size:14px}
+  #reader{width:100%;border-radius:10px;overflow:hidden;margin-top:10px}
+  .aviso{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:10px;border-radius:10px;font-size:13px;margin-top:10px}
+  .aviso.ok{background:#ecfdf5;border-color:#bbf7d0;color:#166534}
+  .foot{display:flex;gap:8px;margin-top:12px}
+  .hidden{display:none !important}
+  .tag{display:inline-block;background:#eef5ff;color:var(--pri);padding:2px 8px;border-radius:999px;font-size:12px;margin-left:6px}
+  .divisor{border-top:1px solid var(--bd);margin:16px 0 8px}
+  .rotulo{font-size:13px;color:var(--mut);margin:4px 0 0}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Inventário Patrimonial</h1>
+    <div class="info" id="headerInfo">—</div>
+  </div>
+  <button onclick="irParaLista()">Itens <span id="qtdItens">0</span></button>
+</header>
+
+<main>
+
+  <!-- TELA 1: LOGIN -->
+  <section id="tela-login" class="screen active">
+    <div class="card">
+      <h2 style="margin:0 0 4px;font-size:18px">Identificação</h2>
+      <p class="rotulo">Informe seus dados para iniciar o inventário.</p>
+      <label for="usuario">Nome de usuário</label>
+      <input id="usuario" type="text" autocomplete="username" placeholder="Ex.: joao.silva">
+      <label for="matricula">Matrícula</label>
+      <input id="matricula" type="text" inputmode="numeric" placeholder="Ex.: 123456">
+      <div class="foot">
+        <button class="btn-pri" onclick="irParaLocal()">Avançar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- TELA 2: LOCAL -->
+  <section id="tela-local" class="screen">
+    <div class="card">
+      <h2 style="margin:0 0 4px;font-size:18px">Local</h2>
+      <p class="rotulo">Bloco e sala onde os itens serão inventariados.</p>
+      <label for="bloco">Bloco</label>
+      <input id="bloco" type="text" placeholder="Ex.: A">
+      <label for="sala">Sala</label>
+      <input id="sala" type="text" placeholder="Ex.: 101">
+      <div class="foot">
+        <button class="btn-sec" onclick="mostrar('tela-login')">Voltar</button>
+        <button class="btn-pri" onclick="irParaTipo()">Avançar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- TELA 3: CADASTRAR / EXPORTAR -->
+  <section id="tela-tipo" class="screen">
+    <div class="card">
+      <h2 style="margin:0 0 4px;font-size:18px">Cadastrar / Exportar itens</h2>
+      <p class="rotulo">Escolha uma ação.</p>
+
+      <div class="tipo">
+        <button onclick="irParaSem()">➕ Cadastrar item <b>sem</b> patrimônio</button>
+        <button onclick="irParaCom()">➕ Cadastrar item <b>com</b> patrimônio</button>
+      </div>
+
+      <div class="divisor"></div>
+
+      <div class="tipo">
+        <button class="acento" onclick="irParaLista()">📋 Ver itens cadastrados (<span id="qtdItensTipo">0</span>)</button>
+        <button class="acento" onclick="exportar()">📤 Exportar CSV</button>
+        <button class="acento" onclick="exportarZip()">📦 Exportar CSV + Imagens (ZIP)</button>
+      </div>
+
+      <div id="exportStatus" class="aviso hidden"></div>
+
+      <div class="foot">
+        <button class="btn-sec" onclick="mostrar('tela-local')">Voltar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- TELA 4A: SEM PATRIMÔNIO -->
+  <section id="tela-sem" class="screen">
+    <div class="card">
+      <h2 style="margin:0 0 4px;font-size:18px">Item sem patrimônio</h2>
+      <label for="nomeSem">Nome do item</label>
+      <input id="nomeSem" type="text" placeholder="Ex.: Cadeira giratória">
+      <label>Foto</label>
+      <input id="fotoSem" type="file" accept="image/*" capture="environment">
+      <div class="preview hidden" id="previewSem"><img id="imgSem" alt="Prévia"></div>
+      <div class="foot">
+        <button class="btn-sec" onclick="mostrar('tela-tipo')">Voltar</button>
+        <button class="btn-pri" onclick="salvarSem()">Adicionar item</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- TELA 4B: COM PATRIMÔNIO -->
+  <section id="tela-com" class="screen">
+    <div class="card">
+      <h2 style="margin:0 0 4px;font-size:18px">Item com patrimônio</h2>
+
+      <label>Método de leitura</label>
+      <div class="metodos">
+        <button id="m-qr"   onclick="setMetodo('qr')">QR Code</button>
+        <button id="m-bar"  onclick="setMetodo('bar')">Código de Barras</button>
+        <button id="m-ocr"  onclick="setMetodo('ocr')">OCR (imagem)</button>
+        <button id="m-man"  onclick="setMetodo('man')">Manual</button>
+      </div>
+
+      <div id="painel-qr" class="hidden">
+        <div id="reader"></div>
+        <div class="foot">
+          <button class="btn-sec" onclick="pararScanner()">Parar leitura</button>
+        </div>
+      </div>
+
+      <div id="painel-ocr" class="hidden">
+        <label>Foto do número</label>
+        <input id="fotoOCR" type="file" accept="image/*" capture="environment">
+        <div id="ocrStatus" class="aviso hidden"></div>
+      </div>
+
+      <label for="gestora">Gestora</label>
+      <input id="gestora" type="text" list="listaGestoras" placeholder="Ex.: FAPESP" autocomplete="off">
+      <datalist id="listaGestoras"></datalist>
+
+      <label for="patrimonio">Número do patrimônio</label>
+      <input id="patrimonio" type="text" inputmode="numeric" placeholder="Ex.: 123456">
+
+      <label for="fotoCom">Foto (opcional)</label>
+      <input id="fotoCom" type="file" accept="image/*" capture="environment">
+      <div class="preview hidden" id="previewCom"><img id="imgCom" alt="Prévia"></div>
+
+      <div class="foot">
+        <button class="btn-sec" onclick="mostrar('tela-tipo')">Voltar</button>
+        <button class="btn-pri" onclick="salvarCom()">Adicionar item</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- TELA 5: LISTA -->
+  <section id="tela-lista" class="screen">
+    <div class="card">
+      <h2 style="margin:0 0 8px;font-size:18px">Itens cadastrados</h2>
+      <div id="listaItens"></div>
+      <div class="foot">
+        <button class="btn-sec" onclick="mostrar('tela-tipo')">Voltar</button>
+        <button class="btn-pri" onclick="mostrar('tela-tipo')">Cadastrar mais</button>
+      </div>
+      <div class="foot">
+        <button class="btn-danger" onclick="limparTudo()">Limpar inventário</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Libs -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js"></script>
+
+<script>
+/* ============ STORAGE KEYS ============ */
+const STORAGE_ITENS      = 'inventario.itens';
+const STORAGE_GESTORAS   = 'inventario.gestoras';
+const STORAGE_CONTADORES = 'inventario.contadores';
+
+/* ============ ESTADO ============ */
+const state = {
+  usuario: '',
+  matricula: '',
+  bloco: '',
+  sala: '',
+  itens: JSON.parse(localStorage.getItem(STORAGE_ITENS) || '[]'),
+  contadores: JSON.parse(localStorage.getItem(STORAGE_CONTADORES) || '{}'),
+  metodo: null
+};
+
+let scanner = null;
+let imagemAtual = { sem: null, com: null };
+
+/* ============ NAVEGAÇÃO ============ */
+function mostrar(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  atualizaHeader();
+}
+function atualizaHeader() {
+  const partes = [];
+  if (state.usuario) partes.push(state.usuario);
+  if (state.matricula) partes.push('mat. ' + state.matricula);
+  if (state.bloco) partes.push('Bloco ' + state.bloco);
+  if (state.sala) partes.push('Sala ' + state.sala);
+  document.getElementById('headerInfo').textContent = partes.join(' · ') || '—';
+  document.getElementById('qtdItens').textContent = state.itens.length;
+  const qt = document.getElementById('qtdItensTipo');
+  if (qt) qt.textContent = state.itens.length;
+}
+
+function irParaLocal() {
+  const u = document.getElementById('usuario').value.trim();
+  const m = document.getElementById('matricula').value.trim();
+  if (!u || !m) { alert('Preencha usuário e matrícula.'); return; }
+  state.usuario = u; state.matricula = m;
+  mostrar('tela-local');
+}
+function irParaTipo() {
+  const b = document.getElementById('bloco').value.trim();
+  const s = document.getElementById('sala').value.trim();
+  if (!b || !s) { alert('Preencha Bloco e Sala.'); return; }
+  state.bloco = b; state.sala = s;
+  mostrar('tela-tipo');
+}
+function irParaSem() {
+  document.getElementById('nomeSem').value = '';
+  document.getElementById('fotoSem').value = '';
+  document.getElementById('previewSem').classList.add('hidden');
+  imagemAtual.sem = null;
+  mostrar('tela-sem');
+}
+function irParaCom() {
+  document.getElementById('gestora').value = '';
+  document.getElementById('patrimonio').value = '';
+  document.getElementById('fotoCom').value = '';
+  document.getElementById('previewCom').classList.add('hidden');
+  document.getElementById('ocrStatus').classList.add('hidden');
+  imagemAtual.com = null;
+  setMetodo(null);
+  carregarGestoras();
+  mostrar('tela-com');
+}
+function irParaLista() {
+  if (!state.bloco || !state.sala) { alert('Inicie o inventário primeiro.'); return; }
+  renderizarLista();
+  mostrar('tela-lista');
+}
+
+/* ============ GESTORAS ============ */
+function carregarGestoras() {
+  const gestoras = JSON.parse(localStorage.getItem(STORAGE_GESTORAS) || '[]');
+  const dl = document.getElementById('listaGestoras');
+  dl.innerHTML = gestoras.map(g => `<option value="${escapeHtml(g)}"></option>`).join('');
+}
+function salvarGestora(nome) {
+  if (!nome) return;
+  const gestoras = JSON.parse(localStorage.getItem(STORAGE_GESTORAS) || '[]');
+  if (!gestoras.some(g => g.toLowerCase() === nome.toLowerCase())) {
+    gestoras.push(nome);
+    gestoras.sort((a,b) => a.localeCompare(b, 'pt-BR'));
+    localStorage.setItem(STORAGE_GESTORAS, JSON.stringify(gestoras));
+  }
+}
+
+/* ============ MÉTODOS DE LEITURA ============ */
+function setMetodo(m) {
+  state.metodo = m;
+  ['qr','bar','ocr','man'].forEach(k => {
+    const el = document.getElementById('m-' + k);
+    if (el) el.classList.toggle('ativo', k === m);
+  });
+  document.getElementById('painel-qr').classList.toggle('hidden', !(m === 'qr' || m === 'bar'));
+  document.getElementById('painel-ocr').classList.toggle('hidden', m !== 'ocr');
+  if (m === 'qr' || m === 'bar') iniciarScanner();
+  else pararScanner();
+}
+
+async function iniciarScanner() {
+  pararScanner();
+  try {
+    scanner = new Html5Qrcode('reader');
+    await scanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      (texto) => {
+        document.getElementById('patrimonio').value = texto;
+        pararScanner();
+      },
+      () => {}
+    );
+  } catch (e) {
+    console.warn('Scanner indisponível:', e);
+  }
+}
+async function pararScanner() {
+  if (!scanner) return;
+  try { await scanner.stop(); await scanner.clear(); } catch(_) {}
+  scanner = null;
+}
+
+document.getElementById('fotoOCR').addEventListener('change', async (ev) => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const st = document.getElementById('ocrStatus');
+  st.classList.remove('hidden');
+  st.classList.remove('ok');
+  st.textContent = 'Processando OCR...';
+  try {
+    const { data: { text } } = await Tesseract.recognize(file, 'eng');
+    const digitos = (text.match(/\d{3,}/g) || []).join('');
+    if (digitos) {
+      document.getElementById('patrimonio').value = digitos;
+      st.classList.add('ok');
+      st.textContent = 'Número detectado: ' + digitos;
+    } else {
+      st.textContent = 'Não foi possível identificar números. Digite manualmente.';
+    }
+  } catch (e) {
+    st.textContent = 'Falha no OCR. Digite manualmente.';
+  }
+});
+
+/* ============ FOTOS ============ */
+function lerArquivoComoDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+document.getElementById('fotoSem').addEventListener('change', async (ev) => {
+  const f = ev.target.files[0]; if (!f) return;
+  imagemAtual.sem = await lerArquivoComoDataURL(f);
+  document.getElementById('imgSem').src = imagemAtual.sem;
+  document.getElementById('previewSem').classList.remove('hidden');
+});
+document.getElementById('fotoCom').addEventListener('change', async (ev) => {
+  const f = ev.target.files[0]; if (!f) return;
+  imagemAtual.com = await lerArquivoComoDataURL(f);
+  document.getElementById('imgCom').src = imagemAtual.com;
+  document.getElementById('previewCom').classList.remove('hidden');
+});
+
+/* ============ NOME DA IMAGEM ============ */
+function sanitizar(s) {
+  return String(s || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    || 'x';
+}
+
+function extensaoDeDataURL(dataUrl) {
+  const m = /^data:image\/([a-zA-Z0-9+.-]+)/.exec(dataUrl || '');
+  if (!m) return 'jpg';
+  const t = m[1].toLowerCase();
+  if (t === 'jpeg') return 'jpg';
+  if (t === 'svg+xml') return 'svg';
+  return t;
+}
+
+function chaveContador() {
+  return sanitizar(state.bloco) + '__' + sanitizar(state.sala);
+}
+
+function proximoNumero() {
+  const chave = chaveContador();
+  const atual = state.contadores[chave] || 0;
+  const proximo = atual + 1;
+  state.contadores[chave] = proximo;
+  localStorage.setItem(STORAGE_CONTADORES, JSON.stringify(state.contadores));
+  return proximo;
+}
+
+function gerarNomeImagem(dataUrl) {
+  const b = sanitizar(state.bloco);
+  const s = sanitizar(state.sala);
+  const n = String(proximoNumero()).padStart(3, '0');
+  const ext = extensaoDeDataURL(dataUrl);
+  return `Imagem_${b}_${s}_${n}.${ext}`;
+}
+
+/* ============ SALVAR ITENS ============ */
+function proximoId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+function salvarSem() {
+  const nome = document.getElementById('nomeSem').value.trim();
+  if (!nome) { alert('Informe o nome do item.'); return; }
+  const id = proximoId();
+  const filename = imagemAtual.sem ? gerarNomeImagem(imagemAtual.sem) : '';
+  state.itens.push({
+    id, tipo: 'sem', gestora: '', patrimonio: '', nome,
+    imagem: imagemAtual.sem, filename
+  });
+  persistir();
+  mostrar('tela-tipo');
+}
+
+function salvarCom() {
+  const gestora = document.getElementById('gestora').value.trim();
+  const patrimonio = document.getElementById('patrimonio').value.trim();
+  if (!gestora) { alert('Informe a Gestora.'); return; }
+  if (!patrimonio) { alert('Informe o Número do Patrimônio.'); return; }
+  salvarGestora(gestora);
+  const id = proximoId();
+  const filename = imagemAtual.com ? gerarNomeImagem(imagemAtual.com) : '';
+  state.itens.push({
+    id, tipo: 'com', gestora, patrimonio, nome: '',
+    imagem: imagemAtual.com, filename
+  });
+  persistir();
+  mostrar('tela-tipo');
+}
+
+function removerItem(id) {
+  state.itens = state.itens.filter(i => i.id !== id);
+  persistir();
+  renderizarLista();
+}
+
+function persistir() {
+  localStorage.setItem(STORAGE_ITENS, JSON.stringify(state.itens));
+  atualizaHeader();
+}
+
+function renderizarLista() {
+  const el = document.getElementById('listaItens');
+  if (!state.itens.length) {
+    el.innerHTML = '<div class="vazio">Nenhum item cadastrado ainda.</div>';
+    return;
+  }
+  el.innerHTML = state.itens.map(it => {
+    const tag = it.tipo === 'com' ? '<span class="tag">patrimônio</span>' : '<span class="tag">sem</span>';
+    const titulo = it.tipo === 'com'
+      ? `${escapeHtml(it.patrimonio)} — ${escapeHtml(it.gestora)}`
+      : escapeHtml(it.nome);
+    const sub = it.tipo === 'com'
+      ? 'Com patrimônio'
+      : 'Sem patrimônio';
+    const img = it.imagem ? `<img src="${it.imagem}" alt="">` : `<img alt="" style="background:#eee">`;
+    const arq = it.filename ? `<small>${escapeHtml(it.filename)}</small>` : '';
+    return `<div class="item">
+      ${img}
+      <div class="meta">
+        <strong>${titulo} ${tag}</strong>
+        <small>${sub}</small>
+        ${arq}
+      </div>
+      <button class="x" onclick="removerItem('${it.id}')" aria-label="Remover">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function limparTudo() {
+  if (!confirm('Remover todos os itens do inventário?')) return;
+  state.itens = [];
+  state.contadores = {};
+  localStorage.setItem(STORAGE_CONTADORES, '{}');
+  persistir();
+  renderizarLista();
+}
+
+/* ============ EXPORTAÇÃO ============ */
+function escaparCampo(v) {
+  v = String(v ?? '');
+  if (/[;"\r\n]/.test(v)) return '"' + v.replace(/"/g, '""') + '"';
+  return v;
+}
+function gerarCSV() {
+  const cab = ['BLOCO','SALA','GESTORA','PATRIMONIO','NOME','IMAGEM'];
+  const linhas = [cab.join(';')];
+  for (const it of state.itens) {
+    linhas.push([
+      state.bloco, state.sala,
+      it.gestora || '', it.patrimonio || '', it.nome || '', it.filename || ''
+    ].map(escaparCampo).join(';'));
+  }
+  return '\uFEFF' + linhas.join('\r\n');
+}
+function nomeArquivo(ext) {
+  const d = new Date();
+  const p = n => String(n).padStart(2,'0');
+  return `inventario_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}.${ext}`;
+}
+
+function setStatusExport(msg, ok) {
+  const st = document.getElementById('exportStatus');
+  if (!st) return;
+  st.classList.remove('hidden');
+  st.classList.toggle('ok', !!ok);
+  st.textContent = msg;
+}
+
+async function compartilharOuBaixar(blob, filename) {
+  try {
+    const file = new File([blob], filename, { type: blob.type });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'Inventário Patrimonial' });
+      return 'Compartilhado.';
+    }
+  } catch(_) {}
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+  a.remove(); URL.revokeObjectURL(url);
+  return 'Arquivo baixado.';
+}
+
+async function exportar() {
+  if (!state.itens.length) { alert('Nenhum item para exportar.'); return; }
+  setStatusExport('Gerando CSV...');
+  const csv = gerarCSV();
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const msg = await compartilharOuBaixar(blob, nomeArquivo('csv'));
+  setStatusExport('CSV: ' + msg, true);
+}
+
+async function exportarZip() {
+  if (!state.itens.length) { alert('Nenhum item para exportar.'); return; }
+  setStatusExport('Gerando ZIP...');
+  const zip = new JSZip();
+  zip.file('inventario.csv', gerarCSV());
+  const pastaImg = zip.folder('imagens');
+  for (const it of state.itens) {
+    if (it.imagem && it.filename) {
+      const base64 = it.imagem.split(',')[1];
+      pastaImg.file(it.filename, base64, { base64: true });
+    }
+  }
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const msg = await compartilharOuBaixar(blob, nomeArquivo('zip'));
+  setStatusExport('ZIP: ' + msg, true);
+}
+
+/* ============ UTIL ============ */
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+/* ============ SERVICE WORKER ============ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(() => {});
+  });
+}
+
+atualizaHeader();
+</script>
+</body>
+</html>
